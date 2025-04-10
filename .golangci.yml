@@ -1,0 +1,136 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+# Configured for compatibility with Go 1.24.x and golangci-lint 2.0.2
+
+# Version of the configuration file format
+version: 2
+
+# Options for the running golangci-lint
+run:
+  # Timeout for running linters. Default: 1m
+  timeout: 5m
+  
+  # Include test files in analysis. Default: true
+  tests: true
+  
+  # Exit code when at least one issue was found. Default: 1
+  issues-exit-code: 1
+  
+  # Allow multiple parallel jobs
+  concurrency: 4
+
+  # Which dirs to skip during linting
+  skip-dirs:
+    - bin
+    - vendor
+    - .git
+    - tmp
+  
+  # Skip files matching this regex pattern
+  skip-files:
+    - ".*_test\\.go$"  # Skip linting test files, comment out if you want to lint tests too
+
+# Output configuration options
+output:
+  # Format: colored-line-number|line-number|json|tab|checkstyle|code-climate|html
+  format: colored-line-number
+  
+  # Print linter name in the error message. Default: true
+  print-linter-name: true
+  
+  # Print issued lines. Default: true
+  print-issued-lines: true
+
+# All available linters and their configurations
+linters:
+  disable-all: true  # Disable all linters, then enable only what we want
+  enable:
+    # Linters enabled by default in golangci-lint 2.0.2
+    - errcheck      # Check for unchecked errors
+    - govet         # Reports suspicious constructs
+    - ineffassign   # Detects unused variable assignments
+    - staticcheck   # Static analysis checks
+    - unused        # Check for unused constants, variables, functions and types
+    
+    # Additional useful linters
+    - misspell      # Checks for commonly misspelled English words
+    - gosec         # Security checks
+    - gocyclo       # Cyclomatic complexity
+    - revive        # Fast, configurable, extensible, flexible, and beautiful linter for Go
+    - whitespace    # Checks for unnecessary whitespace
+    - dupl          # Detects duplicate code
+    
+  # Don't enable these linters as they're often too strict or cause false positives:
+  # - gochecknoglobals  # Too restrictive for many valid use cases
+  # - lll               # Line length limitations are often too strict
+  # - wsl               # White space linter is too opinionated
+  # - godox             # Find todos and fixmes - useful sometimes, but not for standard linting
+
+# Linter settings
+linters-settings:
+  # Define general settings for specific linters
+  errcheck:
+    check-type-assertions: true  # Check for ignored type assertion results
+    check-blank: true            # Check for errors assigned to blank identifier (_)
+  
+  gocyclo:
+    # Minimal code complexity to report, default: 30
+    min-complexity: 15
+  
+  gosec:
+    # G104: Audit errors not checked
+    # G107: Potential HTTP request vulnerable to SSRF
+    # G201: SQL query construction using string concatenation
+    # G306: Expect WriteFile permissions to be 0600 or less
+    config:
+      includes:
+        - G104
+        - G107
+        - G201
+        - G306
+  
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+        disabled: false
+        arguments:
+          - checkPrivateReceivers
+          - sayRepetitiveInsteadOfStutters
+
+  misspell:
+    locale: US
+    ignore-words:
+      - analyse  # For British English
+
+# Issues configuration
+issues:
+  # Maximum issues count per one linter. Set to 0 to disable. Default: 50
+  max-issues-per-linter: 0
+  
+  # Maximum count of issues with the same text. Set to 0 to disable. Default: 3
+  max-same-issues: 0
+  
+  # List of regexps of issue texts to exclude
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - gosec
+
+    # Exclude known false positives
+    - text: "G306: Expect WriteFile permissions to be 0600 or less"
+      linters:
+        - gosec
+
+  # Independently of option `exclude` we use default exclude patterns,
+  # it can be disabled by this option. Default: true
+  exclude-use-default: true
+  
+  # Show only new issues created after git revision
+  new: false
+  
+  # Fix found issues automatically. Default: false
+  fix: false
+

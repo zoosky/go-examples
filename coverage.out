@@ -1,0 +1,19 @@
+mode: set
+go-examples/pkg/calculator/calculator.go:14.51,18.2 1 1
+go-examples/pkg/calculator/calculator.go:22.40,27.2 4 1
+go-examples/pkg/calculator/calculator.go:31.45,36.2 4 1
+go-examples/pkg/calculator/calculator.go:40.45,45.2 4 1
+go-examples/pkg/calculator/calculator.go:51.24,55.2 2 1
+go-examples/pkg/calculator/calculator.go:58.29,62.2 2 1
+go-examples/pkg/calculator/calculator.go:65.29,69.2 2 1
+go-examples/pkg/calculator/calculator.go:74.59,74.60 0 0
+go-examples/pkg/calculator/calculator.go:75.59,75.60 0 0
+go-examples/pkg/calculator/calculator.go:76.59,76.60 0 0
+go-examples/pkg/calculator/calculator.go:77.59,77.60 0 0
+go-examples/pkg/calculator/calculator.go:78.59,78.60 0 0
+go-examples/pkg/calculator/calculator.go:79.59,79.60 0 1
+go-examples/pkg/calculator/calculator.go:80.59,80.60 0 1
+go-examples/pkg/calculator/calculator.go:81.59,81.60 0 0
+go-examples/pkg/calculator/calculator.go:82.59,82.60 0 0
+go-examples/pkg/calculator/calculator.go:83.59,83.60 0 0
+go-examples/pkg/calculator/calculator.go:84.58,84.70 1 0
