@@ -106,7 +106,11 @@ func checkServiceHealth(config Configuration) bool {
 		fmt.Printf("Health check failed: %v\n", err)
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Health check failed with status: %s\n", resp.Status)
@@ -186,7 +190,11 @@ func callCalculateAPI(req CalculationRequest, config Configuration) (int, error)
 	if err != nil {
 		return 0, fmt.Errorf("request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
