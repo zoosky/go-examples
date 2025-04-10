@@ -107,14 +107,42 @@ func TestSubtract(t *testing.T) {
 	}
 }
 
-func TestMultiply(t *testing.T) {
+// testOperation is a common testing function to reduce code duplication
+func testOperation(t *testing.T, operation string, testCases []struct {
+	name     string
+	a, b     int
+	expected int
+}) {
 	// Create test logger
 	log := setupTestLogger()
 	
 	// Create calculator with test logger
 	calc := calculator.NewCalculator(log)
 	
-	// Define test cases
+	// Run all test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got int
+			
+			// Call the appropriate operation based on the parameter
+			switch operation {
+			case "multiply":
+				got = calc.Multiply(tc.a, tc.b)
+			case "divide":
+				got = calc.Divide(tc.a, tc.b)
+			default:
+				t.Fatalf("Unknown operation: %s", operation)
+			}
+			
+			// Check the result
+			if got != tc.expected {
+				t.Errorf("%s(%d, %d) = %d; want %d", operation, tc.a, tc.b, got, tc.expected)
+			}
+		})
+	}
+}
+
+func TestMultiply(t *testing.T) {
 	testCases := []struct {
 		name     string
 		a, b     int
@@ -158,15 +186,54 @@ func TestMultiply(t *testing.T) {
 		},
 	}
 	
-	// Run all test cases
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := calc.Multiply(tc.a, tc.b)
-			if got != tc.expected {
-				t.Errorf("Multiply(%d, %d) = %d; want %d", tc.a, tc.b, got, tc.expected)
-			}
-		})
+	testOperation(t, "multiply", testCases)
+}
+
+func TestDivide(t *testing.T) {
+	testCases := []struct {
+		name     string
+		a, b     int
+		expected int
+	}{
+		{
+			name:     "positive numbers",
+			a:        10,
+			b:        2,
+			expected: 5,
+		},
+		{
+			name:     "negative numbers",
+			a:        -10,
+			b:        -2,
+			expected: 5,
+		},
+		{
+			name:     "mixed sign numbers",
+			a:        10,
+			b:        -2,
+			expected: -5,
+		},
+		{
+			name:     "integer division truncation",
+			a:        11,
+			b:        2,
+			expected: 5,
+		},
+		{
+			name:     "division by zero",
+			a:        10,
+			b:        0,
+			expected: 0, // As per our implementation, division by zero returns 0
+		},
+		{
+			name:     "zero divided by number",
+			a:        0,
+			b:        5,
+			expected: 0,
+		},
 	}
+	
+	testOperation(t, "divide", testCases)
 }
 
 // Example functions are treated as documentation and also as tests.
@@ -230,6 +297,26 @@ func ExampleCalculator_Multiply() {
 	product := calc.Multiply(5, 3)
 	fmt.Println(product)
 	// Output: 15
+}
+
+func ExampleDivide() {
+	// Using the functional version for backward compatibility
+	quotient := calculator.Divide(10, 2)
+	fmt.Println(quotient)
+	// Output: 5
+}
+
+func ExampleCalculator_Divide() {
+	// Create a development logger
+	log, _ := logger.NewDevelopment()
+	
+	// Create a calculator with the logger
+	calc := calculator.NewCalculator(log)
+	
+	// Perform calculation with logging
+	quotient := calc.Divide(10, 2)
+	fmt.Println(quotient)
+	// Output: 5
 }
 
 // ----------------------
@@ -298,6 +385,28 @@ func BenchmarkMultiplyLarge(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		calc.Multiply(1000000, 1000000) // Large numbers
+	}
+}
+
+func BenchmarkDivide(b *testing.B) {
+	// Create a no-op logger to minimize logging overhead
+	log := noOpBenchLogger{}
+	calc := calculator.NewCalculator(log)
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		calc.Divide(10, 2)
+	}
+}
+
+func BenchmarkDivideByZeroSafety(b *testing.B) {
+	// Create a no-op logger to minimize logging overhead
+	log := noOpBenchLogger{}
+	calc := calculator.NewCalculator(log)
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		calc.Divide(10, 0) // Tests the zero check
 	}
 }
 

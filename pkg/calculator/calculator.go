@@ -44,6 +44,19 @@ func (c *Calculator) Multiply(a, b int) int {
 	return result
 }
 
+// Divide returns the quotient of two integers.
+// It divides the first argument by the second.
+func (c *Calculator) Divide(a, b int) int {
+	c.log.Infof("Calculating division: %d / %d", a, b)
+	if b == 0 {
+		c.log.Error("Division by zero")
+		return 0
+	}
+	result := a / b
+	c.log.Debugf("Division result: %d", result)
+	return result
+}
+
 // For backward compatibility with existing code, keep the original functions
 // but they now use a default no-op logger
 
@@ -66,6 +79,13 @@ func Multiply(a, b int) int {
 	// Create a calculator with a no-op logger for backward compatibility
 	calc := NewCalculator(noOpLogger{})
 	return calc.Multiply(a, b)
+}
+
+// Divide returns the quotient of two integers.
+func Divide(a, b int) int {
+	// Create a calculator with a no-op logger for backward compatibility
+	calc := NewCalculator(noOpLogger{})
+	return calc.Divide(a, b)
 }
 
 // noOpLogger is a no-operation logger for backward compatibility
