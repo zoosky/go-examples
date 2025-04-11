@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"go-examples/pkg/calculator"
 	"go-examples/pkg/logger"
+	"go-examples/pkg/slogger"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,10 +19,109 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// LoggerInterface defines a common interface for both logging systems
+type LoggerInterface interface {
+	Info(args ...interface{})
+	Error(args ...interface{})
+	Debug(args ...interface{})
+	Warn(args ...interface{})
+	Fatal(args ...interface{})
+	
+	Infof(template string, args ...interface{})
+	Errorf(template string, args ...interface{})
+	Warnf(template string, args ...interface{})
+	Fatalf(template string, args ...interface{})
+}
+
+// SlogAdapter adapts the slogger to our common interface
+type SlogAdapter struct {
+	logger slogger.Logger
+}
+
+func (s *SlogAdapter) Info(args ...interface{}) {
+	// Convert args to a message string and any key-value pairs
+	if len(args) > 0 {
+		msg, ok := args[0].(string)
+		if ok {
+			s.logger.Info(msg, args[1:]...)
+		} else {
+			s.logger.Info("info", args...)
+		}
+	}
+}
+
+func (s *SlogAdapter) Error(args ...interface{}) {
+	if len(args) > 0 {
+		msg, ok := args[0].(string)
+		if ok {
+			s.logger.Error(msg, args[1:]...)
+		} else {
+			s.logger.Error("error", args...)
+		}
+	}
+}
+
+func (s *SlogAdapter) Debug(args ...interface{}) {
+	// slogger doesn't have a Debug method, so use Info
+	s.Info(args...)
+}
+
+func (s *SlogAdapter) Warn(args ...interface{}) {
+	// slogger doesn't have a Warn method, so use Info
+	s.Info(args...)
+}
+
+func (s *SlogAdapter) Fatal(args ...interface{}) {
+	if len(args) > 0 {
+		msg, ok := args[0].(string)
+		if ok {
+			s.logger.Fatal(msg, args[1:]...)
+		} else {
+			s.logger.Fatal("fatal", args...)
+		}
+	}
+}
+
+func (s *SlogAdapter) Infof(template string, args ...interface{}) {
+	// slogger doesn't have formatted methods, so we'll format it ourselves
+	s.logger.Info(fmt.Sprintf(template, args...))
+}
+
+func (s *SlogAdapter) Errorf(template string, args ...interface{}) {
+	s.logger.Error(fmt.Sprintf(template, args...))
+}
+
+func (s *SlogAdapter) Warnf(template string, args ...interface{}) {
+	// slogger doesn't have Warn, so use Info
+	s.logger.Info("WARN: " + fmt.Sprintf(template, args...))
+}
+
+func (s *SlogAdapter) Fatalf(template string, args ...interface{}) {
+	s.logger.Fatal(fmt.Sprintf(template, args...))
+}
+
+// calculatorLoggerAdapter adapts our common interface to the calculator's logger interface
+type calculatorLoggerAdapter struct {
+	log LoggerInterface
+}
+
+func (a *calculatorLoggerAdapter) Debug(args ...interface{})              { a.log.Debug(args...) }
+func (a *calculatorLoggerAdapter) Info(args ...interface{})               { a.log.Info(args...) }
+func (a *calculatorLoggerAdapter) Warn(args ...interface{})               { a.log.Warn(args...) }
+func (a *calculatorLoggerAdapter) Error(args ...interface{})              { a.log.Error(args...) }
+func (a *calculatorLoggerAdapter) Fatal(args ...interface{})              { a.log.Fatal(args...) }
+func (a *calculatorLoggerAdapter) Debugf(template string, args ...interface{})   { a.log.Infof(template, args...) }
+func (a *calculatorLoggerAdapter) Infof(template string, args ...interface{})    { a.log.Infof(template, args...) }
+func (a *calculatorLoggerAdapter) Warnf(template string, args ...interface{})    { a.log.Infof(template, args...) }
+func (a *calculatorLoggerAdapter) Errorf(template string, args ...interface{})   { a.log.Errorf(template, args...) }
+func (a *calculatorLoggerAdapter) Fatalf(template string, args ...interface{})   { a.log.Fatal(fmt.Sprintf(template, args...)) }
+func (a *calculatorLoggerAdapter) With(args ...interface{}) logger.Logger { return a }
+
 // Configuration holds all the server configuration
 type Configuration struct {
-	Port     int
-	LogLevel string
+	Port      int
+	LogLevel  string
+	LogSystem string // "zap" or "slog"
 }
 
 // CalculationRequest represents a calculation API request
@@ -42,15 +143,25 @@ func main() {
 	config := parseFlags()
 
 	// Initialize logger
-	log, err := setupLogger(config.LogLevel)
+	log, err := setupLogger(config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
 	log.Info("Starting calculator microservice")
+	log.Infof("Using %s logging system", config.LogSystem)
 
 	// Create calculator instance with logger
-	calc := calculator.NewCalculator(log)
+	var calcLogger logger.Logger
+	if zapLogger, ok := log.(logger.Logger); ok {
+		// If it's the original logger, use it directly
+		calcLogger = zapLogger
+	} else {
+		// If it's the slog adapter, create a simple adapter for the calculator
+		// The calculator expects the original logger interface
+		calcLogger = &calculatorLoggerAdapter{log: log}
+	}
+	calc := calculator.NewCalculator(calcLogger)
 
 	// Set up API routes
 	router := mux.NewRouter()
@@ -89,37 +200,51 @@ func main() {
 func parseFlags() Configuration {
 	port := flag.Int("port", 8080, "Server port")
 	logLevel := flag.String("log-level", "info", "Log level (debug, info, warn, error)")
+	logSystem := flag.String("log-system", "zap", "Logging system to use (zap or slog)")
 	flag.Parse()
 
 	return Configuration{
-		Port:     *port,
-		LogLevel: *logLevel,
+		Port:      *port,
+		LogLevel:  *logLevel,
+		LogSystem: strings.ToLower(*logSystem),
 	}
 }
 
-// setupLogger creates and configures the logger
-func setupLogger(level string) (logger.Logger, error) {
-	var zapLevel zapcore.Level
-	
-	switch level {
-	case "debug":
-		zapLevel = zapcore.DebugLevel
-	case "info":
-		zapLevel = zapcore.InfoLevel
-	case "warn":
-		zapLevel = zapcore.WarnLevel
-	case "error":
-		zapLevel = zapcore.ErrorLevel
+// setupLogger creates and configures the logger based on the configuration
+func setupLogger(config Configuration) (LoggerInterface, error) {
+	switch config.LogSystem {
+	case "slog":
+		// Initialize structured logger (slogger)
+		slog := slogger.InitLogging()
+		return &SlogAdapter{logger: slog}, nil
+		
+	case "zap", "":
+		// Initialize zap logger (original logger)
+		var zapLevel zapcore.Level
+		
+		switch config.LogLevel {
+		case "debug":
+			zapLevel = zapcore.DebugLevel
+		case "info":
+			zapLevel = zapcore.InfoLevel
+		case "warn":
+			zapLevel = zapcore.WarnLevel
+		case "error":
+			zapLevel = zapcore.ErrorLevel
+		default:
+			zapLevel = zapcore.InfoLevel
+		}
+		
+		// Using NewCustom which doesn't return error
+		return logger.NewCustom(zapLevel, true), nil
+		
 	default:
-		zapLevel = zapcore.InfoLevel
+		return nil, fmt.Errorf("unknown log system: %s, supported systems are 'zap' and 'slog'", config.LogSystem)
 	}
-	
-	// Using NewCustom which doesn't return error
-	return logger.NewCustom(zapLevel, true), nil
 }
 
 // createCalculateHandler returns an HTTP handler for calculator operations
-func createCalculateHandler(calc *calculator.Calculator, log logger.Logger) http.HandlerFunc {
+func createCalculateHandler(calc *calculator.Calculator, log LoggerInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse request
 		var req CalculationRequest
@@ -176,7 +301,7 @@ func healthCheckHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 // sendErrorResponse sends an error response with the given message and status code
-func sendErrorResponse(w http.ResponseWriter, message string, statusCode int, log logger.Logger) {
+func sendErrorResponse(w http.ResponseWriter, message string, statusCode int, log LoggerInterface) {
 	log.Warnf("Error response: %s (code: %d)", message, statusCode)
 	resp := CalculationResponse{
 		Success: false,

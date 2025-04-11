@@ -177,11 +177,11 @@ run-service: build-service
 	@echo "Running calculator microservice on port 8080..."
 	@./$(SERVICE_NAME)
 
-# Run the service with custom port
+# Run the service with custom settings
 .PHONY: run-service-custom
 run-service-custom: build-service
 	@echo "Running calculator microservice with custom settings..."
-	@./$(SERVICE_NAME) --port $(PORT) --log-level $(LOG_LEVEL)
+	@./$(SERVICE_NAME) --port $(PORT) --log-level $(LOG_LEVEL) --log-system $(LOG_SYSTEM)
 
 # Run the calculator client (requires the service to be running)
 .PHONY: run-client
@@ -219,7 +219,7 @@ help:
 	@echo "  make generate     : Generate code (mocks, swagger, etc)"
 	@echo "  make run          : Build and run the CLI application"
 	@echo "  make run-service  : Build and run the calculator microservice"
-	@echo "  make run-service-custom PORT=8080 LOG_LEVEL=debug : Run service with custom settings"
+	@echo "  make run-service-custom PORT=8080 LOG_LEVEL=debug LOG_SYSTEM=slog : Run service with custom settings"
 	@echo "  make run-client   : Build and run the calculator client (requires service to be running)"
 	@echo "  make run-client-custom SERVER=http://localhost:8080 TIMEOUT=5 : Run client with custom settings"
 	@echo "  make help         : Display this help message"

@@ -8,6 +8,7 @@ This is a simple HTTP microservice that provides calculator functionality throug
 - Support for add, subtract, multiply, and divide operations
 - Health check endpoint
 - Configurable port and log level
+- Multiple logging system options (zap or slog)
 - Graceful shutdown on interrupt signal
 
 ## Usage
@@ -20,18 +21,35 @@ You can build and run the microservice using Make:
 # Build the service
 make build-service
 
-# Run with default settings (port 8080, info log level)
+# Run with default settings (port 8080, info log level, zap logger)
 make run-service
 
 # Run with custom settings
-make run-service-custom PORT=9000 LOG_LEVEL=debug
+make run-service-custom PORT=9000 LOG_LEVEL=debug LOG_SYSTEM=slog
 ```
 
 Or build and run manually:
 
 ```bash
 go build -o calcservice ./cmd/calcservice
-./calcservice --port 8080 --log-level info
+./calcservice --port 8080 --log-level info --log-system zap
+```
+
+### Logging Systems
+
+The service supports two logging systems:
+
+1. **zap** (default): Uses Uber's zap logging library for structured, high-performance logging
+2. **slog**: Uses Go's standard library slog package for structured logging
+
+To switch between them, use the `--log-system` flag:
+
+```bash
+# Use zap logger
+./calcservice --log-system zap
+
+# Use slog logger
+./calcservice --log-system slog
 ```
 
 ### API Endpoints
