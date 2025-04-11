@@ -25,23 +25,30 @@ A collection of Go code examples demonstrating various aspects of Go development
 - Wrapper around zap logging library
 - Provides consistent logging interface across applications
 
-### 3. CLI Calculator App
+### 3. SLogger Package
+
+- Located in: `pkg/slogger`
+- Wrapper around Go's standard library slog package
+- Provides simplified structured logging interface
+
+### 4. CLI Calculator App
 
 - Located in: `cmd/app`
 - Command-line application for basic arithmetic
 - Uses the calculator package directly
 - Interactive interface
 
-### 4. Calculator Microservice
+### 5. Calculator Microservice
 
 - Located in: `cmd/calcservice`
 - RESTful API for calculator operations
 - JSON request/response format
 - Configurable port and log level
+- Configurable logging system (ZAP or SLOG)
 - Health check endpoint
 - Graceful shutdown
 
-### 5. Calculator API Client
+### 6. Calculator API Client
 
 - Located in: `cmd/calcclient`
 - Command-line client that uses the calculator microservice
@@ -102,12 +109,59 @@ The project includes examples of:
 - Unit tests
 - Example-based tests (which also serve as documentation)
 - Benchmarks
+- Integration tests
 
-To run tests:
+### Running Basic Tests
+
+To run unit tests:
 
 ```bash
 make test
 ```
+
+### Comprehensive Testing
+
+The project includes a comprehensive test script that:
+
+1. Verifies compilation of all components
+2. Runs all unit tests
+3. Tests the microservice with both logging systems (ZAP and SLOG)
+4. Tests the client-server interaction
+5. Performs integration testing across all components
+6. Generates detailed code coverage reports
+
+To run the comprehensive tests:
+
+```bash
+./test_all.sh
+```
+
+### Code Coverage
+
+The core packages have the following test coverage:
+
+| Package | Coverage |
+|---------|----------|
+| pkg/calculator | 96.6% |
+| pkg/logger | 55.2% |
+| pkg/slogger | 100.0% |
+
+The test script generates both a console coverage report and an HTML report (`coverage.html`) that provides a visual representation of code coverage.
+
+#### Coverage Analysis
+
+1. **calculator package (96.6%)**: 
+   - All primary calculation functions have 100% coverage
+   - The no-op logger methods are not covered but are simple pass-through implementations
+
+2. **logger package (55.2%)**:
+   - Constructor functions are well-tested
+   - Instance methods have minimal coverage since they mostly delegate to the underlying zap logger
+
+3. **slogger package (100%)**:
+   - Complete coverage of all functionality
+
+The command-line applications (CLI app, microservice, client) don't have dedicated unit tests as they're primarily tested through integration testing in the `test_all.sh` script.
 
 ## License
 

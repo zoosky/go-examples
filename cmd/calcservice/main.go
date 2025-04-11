@@ -38,6 +38,7 @@ type SlogAdapter struct {
 	logger slogger.Logger
 }
 
+// Info logs an informational message
 func (s *SlogAdapter) Info(args ...interface{}) {
 	// Convert args to a message string and any key-value pairs
 	if len(args) > 0 {
@@ -50,6 +51,7 @@ func (s *SlogAdapter) Info(args ...interface{}) {
 	}
 }
 
+// Error logs an error message
 func (s *SlogAdapter) Error(args ...interface{}) {
 	if len(args) > 0 {
 		msg, ok := args[0].(string)
@@ -61,16 +63,19 @@ func (s *SlogAdapter) Error(args ...interface{}) {
 	}
 }
 
+// Debug logs a debug message (maps to Info in slogger)
 func (s *SlogAdapter) Debug(args ...interface{}) {
 	// slogger doesn't have a Debug method, so use Info
 	s.Info(args...)
 }
 
+// Warn logs a warning message (maps to Info in slogger)
 func (s *SlogAdapter) Warn(args ...interface{}) {
 	// slogger doesn't have a Warn method, so use Info
 	s.Info(args...)
 }
 
+// Fatal logs a fatal error message and exits the program
 func (s *SlogAdapter) Fatal(args ...interface{}) {
 	if len(args) > 0 {
 		msg, ok := args[0].(string)
@@ -82,20 +87,24 @@ func (s *SlogAdapter) Fatal(args ...interface{}) {
 	}
 }
 
+// Infof logs an informational message with formatting
 func (s *SlogAdapter) Infof(template string, args ...interface{}) {
 	// slogger doesn't have formatted methods, so we'll format it ourselves
 	s.logger.Info(fmt.Sprintf(template, args...))
 }
 
+// Errorf logs an error message with formatting
 func (s *SlogAdapter) Errorf(template string, args ...interface{}) {
 	s.logger.Error(fmt.Sprintf(template, args...))
 }
 
+// Warnf logs a warning message with formatting
 func (s *SlogAdapter) Warnf(template string, args ...interface{}) {
 	// slogger doesn't have Warn, so use Info
 	s.logger.Info("WARN: " + fmt.Sprintf(template, args...))
 }
 
+// Fatalf logs a fatal error message with formatting and exits the program
 func (s *SlogAdapter) Fatalf(template string, args ...interface{}) {
 	s.logger.Fatal(fmt.Sprintf(template, args...))
 }
@@ -115,7 +124,7 @@ func (a *calculatorLoggerAdapter) Infof(template string, args ...interface{})   
 func (a *calculatorLoggerAdapter) Warnf(template string, args ...interface{})    { a.log.Infof(template, args...) }
 func (a *calculatorLoggerAdapter) Errorf(template string, args ...interface{})   { a.log.Errorf(template, args...) }
 func (a *calculatorLoggerAdapter) Fatalf(template string, args ...interface{})   { a.log.Fatal(fmt.Sprintf(template, args...)) }
-func (a *calculatorLoggerAdapter) With(args ...interface{}) logger.Logger { return a }
+func (a *calculatorLoggerAdapter) With(_ ...interface{}) logger.Logger { return a }
 
 // Configuration holds all the server configuration
 type Configuration struct {
